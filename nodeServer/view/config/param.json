@@ -1,0 +1,28 @@
+{
+"API_KEY" : {
+	"GOOGLE_MAPS_JS" : "AIzaSyDfb75FChBJ39zG8JqJ7v_DSpnG_FloiPs"
+},
+"airfields" : [
+	{"content": "<h3>Aérodrome de Toulouse - Lasbordes(LFCL)</h3>",
+	 "id": "LFCL",
+	 "coords": {"lat": 43.590989,
+			 					"lng": 1.496415},
+
+	 "alt_m": 140,
+	 "alt_ft": 458.32},
+
+	 {"content": "<h3>Aérodrome de Muret - Lherm(LFBR)</h3>",
+ 	 "id": "LFBR",
+ 	 "coords": {"lat": 43.449679,
+ 			 				"lng": 1.263685},
+ 	 "alt_m": 190,
+ 	 "alt_ft": 622 },
+
+	 {"content": "<h3>Aéroport de Toulouse-Blagnac(LFBO)</h3>",
+		"id": "LFBO",
+		"coords": {"lat": 43.635000,
+							 "lng": 1.367780},
+		"alt_m": 152,
+		"alt_ft": 499 }
+]
+}

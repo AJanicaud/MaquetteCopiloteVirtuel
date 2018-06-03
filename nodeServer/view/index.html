@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Maquette </title>
+  <link rel="icon" type="image/x-icon" href="img/plane.ico" />
+  <style>
+    #map {
+      height:600px;
+      width:100%;
+    }
+    /* Optional: Makes the sample page fill the window. */
+    /* html, body {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    } */
+    /*Panneau flottant en bas de la carte */
+    #data-panel .col-xs-3 {
+      text-align: center;s
+      background-color: rgba(86,61,124,.15);
+      border: 1px solid rgba(86,61,124,.2);
+    }
+  </style>
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+</head>
+<body>
+  <div class="container">
+
+    <nav class="navbar navbar-default">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Maquette dynamique &mdash; IHM &amp; IA pour un copilote virtuel</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class=col-lg-12 id="data-panel">
+      <div class="row">
+        <div class="col-xs-3">
+            <label>Vitesse</label>
+            <div id="speed">105kts</div>
+        </div>
+        <div class="col-xs-3">
+            <label>Altitude</label>
+            <div id="altitude">3000ft</div>
+        </div>
+        <div class="col-xs-3">
+            <label>Cap</label>
+            <div id="direction">190°</div>
+        </div>
+        <div class="col-xs-3">
+            <label>Destination</label>
+            <div id="destination">LFCL</div>
+        </div>
+      </div>
+    </div>
+
+    <div class=col-lg-12 id="map"></div>
+
+    <div class="col-lg-12" id="actions-panel">
+      <div class="btn-group btn-group-justified">
+        <div class="btn-group">
+          <button onclick="toggleVAC()" class="btn btn-primary"><span class="glyphicon glyphicon-font"></span><br>Carte VAC</button>
+        </div>
+        <div class="btn-group">
+          <button onclick="toggleAERO()" class="btn btn-primary"><span class="glyphicon glyphicon-plane"></span><br>Carte aéro</button>
+        </div>
+        <div class="btn-group">
+          <button onclick="toggleSAT()" class="btn btn-primary"><span class="glyphicon glyphicon-globe"></span><br>Carte satellite</button>
+        </div>
+        <div class="btn-group">
+          <button onclick="centeredView()" class="btn btn-primary"><span class="glyphicon glyphicon-map-marker"></span><br>Vue centrée</button>
+        </div>
+        <div class="btn-group">
+          <button onclick="viewItinerary()" class="btn btn-primary"><span class="glyphicon glyphicon-road"></span><br>Afficher itinéraire</button>
+        </div>
+      </div>
+    </div>
+
+    <!--Nearest aiport button -->
+    <div class="col-lg-12" id="actions-panel2">
+        <div class="btn-group btn-group-justified">
+            <div class="btn-group">
+                <button type="button" id="near" class="btn btn-primary btn-color"><span class="txtBtn">NEAR</span></button>
+            </div>
+            <div class="btn-group">
+                <button onclick="sendDivertSignal()" type="button" id="divert" class="btn btn-primary btn-color"><span class="txtBtn">DVRT</span></button>
+            </div>
+            <div class="btn-group">
+                <button onclick="sendBackSignal()" type="button" id="ret" class="btn btn-primary btn-color"><span class="txtBtn">BACK</span></button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row marketing">
+      <div class="col-lg-12">
+        <div id="markersResults"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>2018 &mdash; ISAE-SUPAERO &mdash; Dassault Aviation</p> 
+      <!-- Thibaud DURIVAUX, Valentin LIGIER, Quentin ZERGUINI, Paul LEGOUX, Noé AURELLE -->
+    </footer>
+
+  </div> <!-- /container -->
+
+  <script>
+    function toggleVAC(){
+      }
+
+    function toggleAERO(){
+      }
+
+    function toogleSAT(){
+      }
+
+    function centeredView(){
+        map.setCenter(current_location.getPosition());
+        console.log('Map centered on current location: ' + JSON.stringify(current_location.getPosition()));
+      }
+
+    function viewItinerary(){
+      }
+  </script>
+
+  <script src="/js/markers.js"></script>
+
+  <!--SOCKET DIALOGUE -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+      var socket = io.connect('http://localhost:8080');
+      var socket81 = io.connect('http://localhost:8081');
+      socket.on('connect', function(data){
+          console.log("Connected to server");
+        });
+
+      socket.on('message', function(message) {
+          //alert('Message du serveur : ' + message);
+        });
+
+      // socket.on('python', function (data) {
+      //   console.log(data);
+      //   displayPointsFromList(data);
+      // });
+      var my_location = {name: 'my_location',
+                        coords: {lat:43.4512507, lng:1.4464599},
+                        content: '<h3>my location</h3>'
+                        };
+
+      // Compute closest marker from current locationn Map
+      var nearBut = document.getElementById("near");
+      nearBut.addEventListener("click", function(){
+            // Send current position to node.js
+            var markers = JSON.stringify(fetchMarkers());
+            // update my_location
+            my_location.coords = getLocation();
+            console.log('Searching for closest marker...')
+            // to Python main
+            socket.emit('compute_near', JSON.stringify(my_location) + "|" + markers);
+        });
+      // From Python main
+      socket.on('near_computed', function (data) {
+          var result = data.split("|");
+          let dist = result[0], closest = result[1];
+          console.log('distance to closest: ' + dist);
+          console.log('Closest marker: ' + closest);
+          // position is a global var in marker.js
+          my_location.coords = getLocation();
+          drawPolyligneFromList("[" + JSON.stringify(my_location) + "," + closest + "]");
+        });
+
+      // From Python main: Add or Remove markers on map
+      // data: stringified list of markers
+      socket.on('add-markers', function (data) {
+          displayMarkersFromList(data);
+        });
+
+      socket.on('remove-markers', function (data) {
+          removeMarkersFromList(data);
+        });
+
+      // From Python main: update current location
+      // data: stringified marker that indicates new position
+      // socket.on('update-position', function (data) {
+      //     var pos = JSON.parse(data);
+      //     my_location.coords = pos.coords;
+      //     updateLocation(data);
+      //   });
+    socket81.on('action', function(data) {
+        var str = data.replace(/"/g,'');
+        if (str === 'déroutement') {
+            // lauch diversion
+            function cb_diversion(terrain){
+                 return function(){
+                    sendAirfield(terrain);
+                }
+            }
+
+            $.getJSON("./config/param.json",function(jdata){
+              // Une ou plusieurs instructions pour traiter les données lues
+                gmarkers = displayMarkersFromList(JSON.stringify(jdata.airfields));
+                var incr = 0;
+                var listTerrain = ["LFCL", "LFBR", "LFBO"];
+                for (let gmarker of gmarkers){
+                  google.maps.event.addListener(gmarkers[incr], 'dblclick', cb_diversion(listTerrain[incr]));  
+                  incr += 1;
+                }
+
+            });
+        }
+        else if (str === 'retour') {
+            // go back
+            removeAllMarkers();
+            drawPolyligneFromList('[]'); //effacer polyligne
+        }
+        else {
+            console.log("[ERR] Wrong message received");
+        }
+    });
+    socket81.on('points', function(data) {
+        console.log("[INF] Points received");
+        gmarkers = displayMarkersFromList(data);
+        for (let gmarker of gmarkers){
+          var color = '#809650';
+          gmarker.setIcon({path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                           fillColor: color,
+                           fillOpacity: 1,
+                           strokeColor: '#000',
+                           strokeWeight: 2,
+                           scale: 1 });
+        }
+
+        drawPolyligneFromList(data);
+    });
+    socket81.on('position', function(data) {
+        var pos = JSON.parse(data);
+        console.log("[INF] Aircraft position received. lat: " + pos[0] + " lng: " + pos[1]);
+        my_location.coords.lat = pos[0];
+        my_location.coords.lng = pos[1];
+        updateLocation(JSON.stringify(my_location));
+        // Update flight parameters
+        document.getElementById("speed").innerHTML = Math.floor(pos[2])+"kts";
+        document.getElementById("altitude").innerHTML = Math.floor(pos[3])+"ft";
+        document.getElementById("direction").innerHTML = Math.floor(pos[4])+"°";
+        var angle_img_name = Math.trunc((Math.floor(pos[4])+5+360)%360/10)*10;
+        current_location.setIcon('img/plane_red_'+String(angle_img_name)+'.png');
+    });
+    function sendDivertSignal(){
+        socket.emit('action','déroutement');
+        console.log("[SCK] Send 'déroutement' on 'action' port 8080");
+    }
+    function sendBackSignal(){
+        socket.emit('action','retour');
+        console.log("[SCK] Send 'retour' on 'action' port 8080");
+    }
+    function sendAirfield(ICAOname){
+        socket.emit('action', ICAOname);
+        console.log("[SCK] Send "+ ICAOname+ " on 'action' port 8080");
+    }
+  </script>
+
+  <!-- INIT MAP -->
+  <script async defer
+          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfb75FChBJ39zG8JqJ7v_DSpnG_FloiPs&callback=initMap"></script>
+
+  <!-- -->
+  <script src="https://code.jquery.com/jquery-3.1.1.js"
+  integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA="
+  crossorigin="anonymous"></script>
+  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+</body>
+</html>
