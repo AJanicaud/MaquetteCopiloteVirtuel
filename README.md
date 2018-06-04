@@ -18,7 +18,7 @@ La maquette est composée de trois parties principales :
 * _back-end_: ensemble de scripts réalisant le traitement des données (Python) ;
 * serveur web: lien entre _front-end_ et _back-end_ (Node.js).
 
-Un schéma synoptique (**Architecture.png**) résume l'ensemble des blocs utilisés ainsi que leurs interactions.
+![Schéma synoptique](./Architecture.png)
 
 ## Utilisation de la maquette
 
